@@ -1,0 +1,14 @@
+{
+  "name": "make-my-event",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace @make-my-event/web",
+    "dev:api": "npm run dev --workspace @make-my-event/api",
+    "build": "npm run build --workspace @make-my-event/shared && npm run build --workspace @make-my-event/api && npm run build --workspace @make-my-event/web"
+  }
+}

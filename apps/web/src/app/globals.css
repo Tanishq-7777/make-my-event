@@ -1,0 +1,8 @@
+﻿:root { color-scheme: light; --ink: #242238; --muted: #777486; --paper: #faf8f4; --accent: #5b4a83; }
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: Arial, Helvetica, sans-serif; }
+.page { min-height: 100vh; display: grid; align-content: center; padding: 10vw; }
+.eyebrow { color: var(--accent); font-size: .75rem; font-weight: 700; letter-spacing: .18em; }
+h1 { margin: 1rem 0; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(3rem, 8vw, 6.5rem); font-weight: 400; letter-spacing: -.045em; line-height: 1.02; }
+.intro { max-width: 32rem; color: var(--muted); font-size: 1.1rem; line-height: 1.6; }
