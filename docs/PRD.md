@@ -176,9 +176,7 @@ The owner remains the highest-level authority.
 
 # **5.3 Guest / Invitee** 
 
-Guests **do not create accounts** . 
-
-They interact through secure email invitation links. 
+Guests must create an account or sign in before accepting an invitation or submitting an RSVP. They reach the invitation through a secure email link, and the authenticated account email must match the invited contact email. Photo uploads through a function QR code remain available without an account. 
 
 They can: 
 
@@ -540,21 +538,11 @@ The system should track:
 
 # **14. Guest RSVP** 
 
-Guests should be able to RSVP without creating an account. 
+Guests must be signed in to accept or decline an invitation and submit an RSVP. A guest who opens an invitation while signed out is prompted to register or sign in. The account email must match the invitation contact email before the invitation can be claimed. 
 
 # **RSVP flow** 
 
-Email ↓ Open invitation ↓ View invitation ↓ 
-
-Accept / Decline 
-
-↓ 
-
-Select number attending 
-
-↓ 
-
-Submit For function-specific invitations: Mehendi → 3 attending Sangeet → 5 attending Wedding → 5 attending Reception → 4 attending 
+Email → Open invitation → Register or sign in → Claim invitation → Respond to each function separately. For each function, accept or decline and, if accepted, enter the number attending. A guest can save one function's response without responding to every other function. The number attending cannot exceed that function's allowed attendee count. 
 
 # **15. RSVP Dashboard** 
 
@@ -624,9 +612,9 @@ Full control.
 
 # **Manager** 
 
-Can manage the event according to assigned permissions. 
+Can perform only the management actions granted by the owner. In V1, managers never receive an implicit broad-management role; permissions are assigned explicitly by module.
 
-The permission system should eventually support: 
+V1 manager permissions are configurable and support:
 
 - Event management 
 
@@ -644,7 +632,7 @@ The permission system should eventually support:
 
 - Album management 
 
-This allows future roles such as: 
+Future role presets may group these permissions as:
 
 Guest Manager Budget Manager Invitation Manager without redesigning the entire authorization system. 
 
@@ -986,7 +974,7 @@ Email ↓ Allowed attendees: 5 ↓ Assign functions ↓ Send invitation
 
 **Journey 4 — Guest RSVP** 
 
-Invitation Email ↓ Open Invitation ↓ View Event ↓ Accept ↓ Number attending: 4 ↓ Submit RSVP ↓ Confirmation No guest account. 
+Invitation Email ↓ Open Invitation ↓ Register or sign in ↓ Claim invitation ↓ Accept/decline each function ↓ Enter number attending for accepted functions ↓ Submit RSVP. The authenticated account email must match the invited contact email. 
 
 **Journey 5 — Upload Photos** Guest at Event ↓ Scan Function QR 
 
@@ -1082,9 +1070,9 @@ For the first production version, I would consider the following mandatory:
 
 # **RSVP** 
 
-- No-account RSVP 
+- Guest account registration/login before invitation claim and RSVP 
 
-- Function-level RSVP 
+- Function-by-function RSVP updates; each response can be saved independently
 
 - Number of attendees 
 

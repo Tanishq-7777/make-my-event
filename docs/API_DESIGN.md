@@ -314,17 +314,17 @@ This prevents someone forwarding the invitation URL to another person and having
 
 GET /api/v1/guest/invitations/:invitationId 
 
-# **Submit RSVP** 
+# **Submit or Update RSVP for One Function** 
 
-PUT /api/v1/guest/invitations/:invitationId/rsvp Example: { "responses": [ { "functionId": "haldi_123", "status": "accepted", "attendingCount": 3 }, { "functionId": "sangeet_123", "status": "accepted", "attendingCount": 4 }, { "functionId": "wedding_123", "status": "accepted", "attendingCount": 5 } ] 
+PATCH /api/v1/guest/invitations/:invitationId/functions/:functionId/rsvp
 
-} 
+Example request:
 
-The backend must validate: 
+```json
+{ "status": "accepted", "attendingCount": 3 }
+```
 
-attendingCount <= maxAttendees 
-
-The RSVP operation should be transactional from the application's perspective so we don't partially save a multi-function response. 
+The authenticated user must have claimed this invitation, and the account email must match the invited contact email. Each request updates only the specified function response; all other function responses remain unchanged and may stay pending. `status` is `accepted` or `declined`. For `accepted`, `attendingCount` must be at least 1 and no greater than that function's `maxAttendees`; for `declined`, store `attendingCount` as 0. The server sets `respondedAt`. Repeated identical requests are safe and produce the same state.
 
 # **13. RSVP Management APIs — Organizer** 
 
@@ -345,6 +345,8 @@ Filters: ?functionId=... ?status=pending
 POST /api/v1/events/:eventId/rsvp/reminders This creates notification jobs. 
 
 **14. Event Manager APIs** 
+
+V1 has no broad manager access. Each manager membership has an explicit set of module permissions, and every protected operation checks the required permission. The owner can grant or revoke permissions individually; the manager role label alone grants no management capability. Supported V1 permissions are `event.manage`, `functions.manage`, `guests.manage`, `invitations.manage`, `rsvp.manage`, `budget.manage`, `tasks.manage`, and `albums.manage`.
 
 **List Managers** 
 
@@ -456,6 +458,8 @@ DELETE /api/v1/events/:eventId/tasks/:taskId
 
 Since schedule items belong to a function, I'd expose them as nested resources. 
 
+Schedule items are stored separately and contain `eventId`, `functionId`, `title`, `startTime`, optional `endTime`, optional `location`, `description`, `guestVisible`, `sortOrder`, `createdBy`, and timestamps. Times are local to the function and interpreted in the event's IANA timezone. The backend verifies that the function belongs to the event and checks `functions.manage` on writes.
+
 GET /api/v1/events/:eventId/functions/:functionId/schedule 
 
 POST /api/v1/events/:eventId/functions/:functionId/schedule 
@@ -463,6 +467,24 @@ POST /api/v1/events/:eventId/functions/:functionId/schedule
 PATCH /api/v1/events/:eventId/functions/:functionId/schedule/:itemId 
 
 DELETE /api/v1/events/:eventId/functions/:functionId/schedule/:itemId 
+
+Request example:
+
+```json
+{
+  "title": "Wedding ceremony",
+  "startTime": "20:00",
+  "endTime": "21:30",
+  "location": "Main hall",
+  "description": "Ceremony begins",
+  "guestVisible": true,
+  "sortOrder": 20
+}
+```
+
+Guest-visible schedule items are returned only to an authenticated, claimed invitee for a function included in their invitation:
+
+GET /api/v1/guest/invitations/:invitationId/functions/:functionId/schedule
 
 # **21. Album APIs** 
 
@@ -827,5 +849,5 @@ I would lock these as our baseline:
 
 **Dedicated overview/dashboard endpoints for aggregate data Background queue for email/notifications Signed direct-to-storage photo uploads Public token endpoints only where necessary No WebSockets No GraphQL** 
 
-There are two places where we should make a product-level choice before I consider the API design fully locked: **whether guest RSVP is submitted as one combined response for all invited functions or can be saved function-by-function** , and **whether the Manager role gets configurable permissions in V1 or simply broad management access** . The rest of the API structure can proceed with the decisions we've already made. 
+V1 decisions: guests must register or sign in and claim their invitation before RSVP; RSVPs are submitted function-by-function; and managers receive only explicitly assigned permissions, with no broad manager access. Schedule items are separate MongoDB documents and have nested CRUD APIs under their function. 
 

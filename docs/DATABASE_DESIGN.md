@@ -6,7 +6,7 @@ I’d start with these:
 
 users events event_members 
 
-functions 
+functions schedule_items 
 
 guest_parties event_invitations 
 
@@ -108,7 +108,7 @@ I would **not embed functions, guests, photos, tasks, etc. inside the event docu
 
 This handles collaboration. { _id, eventId, userId, role: "owner" | "manager", 
 
-permissions: [ "event.manage", "functions.manage", "guests.manage", "invitations.manage", "budget.manage", "tasks.manage", "albums.manage" ], status, invitedBy, invitedAt, joinedAt, createdAt, updatedAt } 
+permissions: [ "event.manage", "functions.manage", "guests.manage", "invitations.manage", "rsvp.manage", "budget.manage", "tasks.manage", "albums.manage" ], status, invitedBy, invitedAt, joinedAt, createdAt, updatedAt } 
 
 This is better than putting managers directly inside events because authorization becomes much easier to query and extend. 
 
@@ -135,6 +135,30 @@ createdAt, updatedAt } Example: functions
 Haldi Mehendi Sangeet Wedding Reception 
 
 Every function is connected to exactly one event. 
+
+# **6.1 schedule_items**
+
+Each schedule item is a separate document belonging to exactly one function. This supports guest-visible schedule queries and independent item updates without growing the function document.
+
+```js
+{
+  _id,
+  eventId,
+  functionId,
+  title,
+  startTime, // local time interpreted in the event timezone
+  endTime,   // optional local time interpreted in the event timezone
+  location,  // optional
+  description,
+  guestVisible,
+  sortOrder,
+  createdBy,
+  createdAt,
+  updatedAt
+}
+```
+
+Every schedule item stores both `eventId` and `functionId` so the backend can enforce the event security boundary and verify that the function belongs to that event. Store schedule times as function-local times; interpret them using the event's IANA timezone.
 
 # **7. guest_parties** 
 
@@ -245,6 +269,8 @@ The invitation can show all the functions they're invited to.
 I would initially keep RSVP data **inside event_invitations** rather than creating a separate rsvps collection. 
 
 At your scale, this is cleaner. 
+
+Each function's RSVP is updated and saved independently, so other functions can remain pending. The primary contact must claim the invitation using an account whose email matches the invited email before responding.
 
 For each function: 
 
@@ -512,7 +538,7 @@ The database would conceptually look like:
 
 USERS │ ┌──────────── `┼` ────────────┐ 
 
-│            │            │ owns        manages       invited │            │            │ ▼ ▼ ▼ EVENTS │ ┌──────────────────── `┼` ────────────────────┐ │                    │                    │ ▼ ▼ ▼ FUNCTIONS         EVENT MEMBERS        GUEST PARTIES │                                         │ │                                         │ `├` ───────────────┐ ▼ │               │                  EVENT INVITATIONS ▼ ▼ │ ALBUM           BUDGET                      │ │               │                         │ ▼ ▼ ▼ PHOTOS      BUDGET ENTRIES                RSVP EVENT │ `├` ── TASKS `├` ── NOTIFICATIONS └── ACTIVITY LOGS **21. Indexes** 
+│            │            │ owns        manages       invited │            │            │ ▼ ▼ ▼ EVENTS │ ┌──────────────────── `┼` ────────────────────┐ │                    │                    │ ▼ ▼ ▼ FUNCTIONS / SCHEDULE_ITEMS   EVENT MEMBERS        GUEST PARTIES │                                         │ │                                         │ `├` ───────────────┐ ▼ │               │                  EVENT INVITATIONS ▼ ▼ │ ALBUM           BUDGET                      │ │               │                         │ ▼ ▼ ▼ PHOTOS      BUDGET ENTRIES                RSVP EVENT │ `├` ── TASKS `├` ── NOTIFICATIONS └── ACTIVITY LOGS **21. Indexes** 
 
 Indexes will be very important even at modest scale, because most application queries are event-scoped. 
 
@@ -537,6 +563,12 @@ userId + eventId
 functions 
 
 eventId + date 
+
+schedule_items
+
+eventId + functionId + startTime
+
+eventId + functionId + sortOrder
 
 guest_parties 
 
@@ -614,13 +646,11 @@ Event A Event B Event C
 
 and must never accidentally access data from another event. 
 
-**24. Three Decisions I Want to Lock Before We Finalize the Schema** 
+**25. Decisions Locked for V1** 
 
-There are three areas where I don't want to make an assumption for you. 
+The following product decisions are reflected in this schema. 
 
 **A. Invitation behavior** 
-
-My recommendation is: 
 
 **One invitation email per family/event** , containing all functions they're invited to. Example: 
 
@@ -628,13 +658,9 @@ You're invited to Rahul & Priya's Wedding
 
 ✓ Haldi — up to 3 ✓ Sangeet — up to 5 ✓ Wedding — up to 5 ✓ Reception — up to 4 
 
-Then the guest responds function by function. 
-
-Do you want this, or do you want **separate invitations/emails for each function** ? 
+The primary contact registers or signs in and claims the invitation before responding. They can save an RSVP for each function independently. 
 
 # **B. Budget entry behavior** 
-
-My recommendation is: 
 
 **Organizer enters individual spending items** , and the system calculates "Spent." Example: 
 
@@ -644,21 +670,9 @@ Catering      ₹80,000 Decoration    ₹45,000 DJ            ₹25,000
 
 Spent:       ₹1,50,000 Remaining:   ₹1,50,000 This gives you accurate numbers while keeping the UI simple. 
 
-I would recommend this model. 
+Use this model for V1. 
 
 # **C. Guest party RSVP** 
 
-For Sharma Family with: 
-
-Allowed = 5 should the guest simply enter: 
-
-# **4 people attending** 
-
-or do you also want: 
-
-Adults: 3 Children: 1 Names: ... 
-
-For V1, I would keep it to **a simple attending count** . We can extend it later without changing the fundamental model. 
-
-Once we settle those three, I think we can lock the database model and then move from **logical database design → actual MongoDB document schemas + validation rules + indexes + example documents + important queries** . 
+For a guest party with five allowed attendees, the primary contact enters one attending count per function (for example, four). V1 does not collect attendee names or adult/child breakdowns. Managers receive explicit, configurable module permissions; V1 does not grant broad manager access. 
 

@@ -344,9 +344,7 @@ Managers can be given management capabilities such as:
 
 - Album management 
 
-We haven't yet locked whether granular permission assignment will be fully configurable in V1 or whether we start with a broad Manager role. 
-
-We'll decide this in the System Design stage. 
+V1 uses explicit, configurable module permissions for each manager. A `manager` membership by itself grants no access; each protected action requires the corresponding permission, and the owner retains full control. V1 does not provide a broad manager access level. 
 
 # **14. Email** 
 
@@ -658,7 +656,7 @@ I don't think we need to make all of these decisions right now, but they should 
 
 **Frontend/backend repository structure:** Monorepo vs separate repositories. 
 
-**Permission granularity:** Broad Manager role initially vs fully configurable permissions in V1. 
+**Permission granularity:** Locked for V1: managers receive only explicitly assigned module permissions; there is no broad manager access level. 
 
 **Database modeling:** Exact MongoDB collections, indexes, embedding vs references. 
 
